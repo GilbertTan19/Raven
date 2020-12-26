@@ -24,7 +24,7 @@ const signUpController = (req, res) => {
 
   const setCookieAndSendResponse = (newUser) => (err, token) => {
     if (err) {
-      throw err;
+      // throw err;
     }
 
     res.cookie("authentication", token, {
@@ -103,7 +103,7 @@ const signInController = (req, res) => {
 
   const setCookieAndSendResponse = (user) => (err, token) => {
     if (err) {
-      throw err;
+      // throw err;
     }
 
     res.cookie("authentication", token, {
