@@ -11,6 +11,7 @@ const userUtils = require("../../util/userUtils");
 // project model
 const Project = require("../../models/Project");
 const User = require("../../models/User");
+const Post = require("../../models/Post");
 
 // @route GET api/projects
 // @desc get all projects
@@ -87,40 +88,64 @@ const { promisify } = require("util");
 const pipeline = promisify(require("stream").pipeline);
 const upload = multer();
 
-router.post("/upload", authMiddleware, upload.single("file"), async (req, res, next) => {
-  const {
-    file,
-    body: { id },
-  } = req;
+router.post(
+  "/upload",
+  authMiddleware,
+  upload.single("file"),
+  async (req, res, next) => {
+    const {
+      file,
+      body: { id },
+    } = req;
 
-  if (file.detectedFileExtension != ".jpg")
-    return res
-      .status(400)
-      .json({ msg: "Invalid file type. The image must be of a .jpg format" });
+    if (file.detectedFileExtension != ".jpg")
+      return res
+        .status(400)
+        .json({ msg: "Invalid file type. The image must be of a .jpg format" });
 
-  const fileName = id + file.detectedFileExtension;
+    const fileName = id + file.detectedFileExtension;
 
-  await pipeline(
-    file.stream,
-    fs.createWriteStream(`${__dirname}/../../public/images/${fileName}`)
-  );
+    await pipeline(
+      file.stream,
+      fs.createWriteStream(`${__dirname}/../../public/images/${fileName}`)
+    );
 
-  const putProjectWithPopulate = function (query, updated) {
-    return Project.findByIdAndUpdate(query, updated, {
-      returnOriginal: false,
-      new: true,
-    }).populate("author");
-  };
+    const putProjectWithPopulate = function (query, updated) {
+      return Project.findByIdAndUpdate(query, updated, {
+        returnOriginal: false,
+        new: true,
+      }).populate("author");
+    };
 
-  const project = await putProjectWithPopulate(id, {
-    img: {
-      data: fs.readFileSync(
-        path.join(`${__dirname}/../../public/images/${fileName}`)
-      ),
-      contentType: "image/jpg",
-    },
+    const project = await putProjectWithPopulate(id, {
+      img: {
+        data: fs.readFileSync(
+          path.join(`${__dirname}/../../public/images/${fileName}`)
+        ),
+        contentType: "image/jpg",
+      },
+    });
+    res.json(project);
+  }
+);
+
+// @route POST api/projects
+// @desc create a project
+// @access public
+router.post("/:projectid/forum/add", authMiddleware, (req, res) => {
+  const user = req.user;
+
+  const newPost = new Post({
+    message: req.body.message,
+    project: req.params.projectid,
+    author: user.id,
   });
-  res.json(project);
+
+  newPost.save().then((project) => {
+    res.json(project);
+    user.projects.push(project._id);
+    user.save();
+  });
 });
 
 module.exports = router;
