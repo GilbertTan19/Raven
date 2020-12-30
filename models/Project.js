@@ -29,6 +29,18 @@ const ProjectSchema = new Schema({
       ref: "users",
     },
   ],
+  applications: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "joinApplication",
+    },
+  ],
+  posts: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "post",
+    },
+  ],
 });
 
 module.exports = Project = mongoose.model("project", ProjectSchema);

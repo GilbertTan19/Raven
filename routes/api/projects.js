@@ -2,6 +2,7 @@ const express = require("express");
 const multer = require("multer");
 const path = require("path");
 const authMiddleware = require("../../middleware/auth-jwt");
+const projectDetailMiddleware = require("../../middleware/projectDetail");
 
 const router = express.Router();
 
@@ -12,6 +13,7 @@ const userUtils = require("../../util/userUtils");
 const Project = require("../../models/Project");
 const User = require("../../models/User");
 const Post = require("../../models/Post");
+const JoinApplication = require("../../models/JoinApplication");
 
 // @route GET api/projects
 // @desc get all projects
@@ -42,6 +44,8 @@ router.post("/", authMiddleware, (req, res) => {
   });
 });
 
+// @route DELETE api/projects/:id
+// @desc delete a project
 router.delete("/:id", authMiddleware, (req, res) => {
   const user = req.user;
 
@@ -129,23 +133,64 @@ router.post(
   }
 );
 
-// @route POST api/projects
-// @desc create a project
-// @access public
-router.post("/:projectid/forum/add", authMiddleware, (req, res) => {
-  const user = req.user;
-
-  const newPost = new Post({
-    message: req.body.message,
-    project: req.params.projectid,
-    author: user.id,
-  });
-
-  newPost.save().then((project) => {
-    res.json(project);
-    user.projects.push(project._id);
-    user.save();
-  });
+// @route GET api/projects
+// @desc get all join project application forms
+router.get("/:id/join", (req, res) => {
+  JoinApplication.find()
+    .sort({ date: -1 })
+    .then((applications) => res.json(applications))
+    .catch((err) => res.status(404).json({ success: false }));
 });
+
+// @route POST api/projects/:id/join
+// @desc submit a join project application form
+router.post(
+  "/:id/join",
+  [authMiddleware, projectDetailMiddleware],
+  (req, res) => {
+    const user = req.user;
+    const project = req.project;
+    console.log("post router");
+
+    const newApplication = new JoinApplication({
+      applicant: user._id,
+      project: req.params.id,
+      answer: req.body.answer,
+    });
+
+    newApplication.save().then((application) => {
+      res.json(application);
+      user.applications.push(application._id);
+      user.save();
+      project.applications.push(application._id);
+      project.save();
+    });
+  }
+);
+
+// @route POST api/projects/:id/join
+// @desc submit a join project application form
+router.post(
+  "/:id/join",
+  [authMiddleware, projectDetailMiddleware],
+  (req, res) => {
+    const user = req.user;
+    const project = req.project;
+
+    const newPost = new Post({
+      author: user._id,
+      project: project.id,
+      message: req.body.message,
+    });
+
+    newPost.save().then((post) => {
+      res.json(post);
+      user.posts.push(post._id);
+      user.save();
+      project.posts.push(post._id);
+      project.save();
+    });
+  }
+);
 
 module.exports = router;

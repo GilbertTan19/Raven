@@ -26,6 +26,18 @@ const UserSchema = new Schema({
       ref: "project",
     },
   ],
+  applications: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "joinApplication",
+    },
+  ],
+  posts: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "post",
+    },
+  ],
 });
 
 // Exports the model using the specified Schema
